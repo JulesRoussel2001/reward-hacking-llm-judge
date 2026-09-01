@@ -428,38 +428,45 @@ def _apply_effort(params: dict, effort: str | None) -> dict:
     return params
 
 
-def _stream_with_heartbeat(client, params: dict, *, heartbeat: float = 60.0,
-                           per_call_timeout: float | None = None, label: str = ""):
+def _stream_with_heartbeat(client, params: dict, *, per_call_timeout: float | None = None,
+                           progress=None, progress_key: str = ""):
     """Stream one call, printing a heartbeat and optionally enforcing a deadline.
 
     Returns (message, timed_out, partial_tokens). On timeout the stream is
     abandoned and (None, True, n) is returned so the caller can log the row as
     timed_out and move on rather than blocking the run.
 
+    Reports progress into a shared registry instead of printing, so that with
+    several workers in flight the runner can emit ONE heartbeat line naming
+    every in-flight row rather than interleaved per-call chatter.
+
     We stream explicitly here rather than through SLEIGHT's call_anthropic
     because that helper gives no visibility into a call in flight and no way to
     bound one -- a single near-budget generation stalled stakes_t1 for ~10
-    minutes with no output. Used only when a heartbeat or timeout is requested;
-    otherwise call_anthropic is still the path, keeping its retry/backoff.
+    minutes with no output. NOTE: this path does not carry call_anthropic's
+    transient-error retry. It is used only when a heartbeat or timeout is
+    requested; with neither, calls go through call_anthropic unchanged.
     """
     import time as _time
 
     start = _time.monotonic()
-    next_beat = heartbeat
     n_tokens = 0
+    if progress is not None:
+        progress.set(progress_key, 0)
     stream_params = {k: v for k, v in params.items() if k != "output_config"}
     stream_params["timeout"] = 300.0
-    with client.messages.stream(**stream_params) as stream:
-        for _event in stream:
-            n_tokens += 1
-            elapsed = _time.monotonic() - start
-            if heartbeat and elapsed >= next_beat:
-                print(f"      ...in flight {elapsed:.0f}s, ~{n_tokens} stream events{label}",
-                      flush=True)
-                next_beat += heartbeat
-            if per_call_timeout is not None and elapsed > per_call_timeout:
-                return None, True, n_tokens
-        return stream.get_final_message(), False, n_tokens
+    try:
+        with client.messages.stream(**stream_params) as stream:
+            for _event in stream:
+                n_tokens += 1
+                if progress is not None:
+                    progress.set(progress_key, n_tokens)
+                if per_call_timeout is not None and _time.monotonic() - start > per_call_timeout:
+                    return None, True, n_tokens
+            return stream.get_final_message(), False, n_tokens
+    finally:
+        if progress is not None:
+            progress.drop(progress_key)
 
 
 def _usage_fields(message) -> dict:
@@ -622,9 +629,11 @@ def judge(
         try:
             if thinking and (heartbeat or per_call_timeout):
                 message, timed_out, n_events = _stream_with_heartbeat(
-                    client, params, heartbeat=heartbeat,
+                    client, params,
                     per_call_timeout=per_call_timeout,
-                    label=f"  [{result['transcript_id']} {prompt_variant}]",
+                    progress=extra.get("progress"),
+                    progress_key=extra.get("progress_key")
+                    or f"{result['transcript_id']}/{prompt_variant}",
                 )
                 if timed_out:
                     result["timed_out"] = True

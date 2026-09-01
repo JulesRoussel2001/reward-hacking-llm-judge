@@ -57,30 +57,9 @@ from src.judge import (  # noqa: E402
     validate_effort,
 )
 from src.logging_io import RunLogger, completed_tuples  # noqa: E402
+from src.runner_core import MAX_WORKERS, Progress, run_tasks  # noqa: E402
 
-# List prices, USD per million tokens: (input, output).
-# Cache read is 0.1x input, cache write (5-minute TTL) is 1.25x input.
-PRICES = {
-    "claude-sonnet-5": (2.00, 10.00),
-    "claude-haiku-4-5": (1.00, 5.00),
-    "claude-opus-5": (5.00, 25.00),
-    "claude-sonnet-4-6": (3.00, 15.00),
-}
-
-
-def row_cost(usage: dict, model: str) -> float:
-    """USD for one call from its usage block, at that model's prices."""
-    if model not in PRICES:
-        raise KeyError(f"no price entry for {model!r}; add one to PRICES")
-    p_in, p_out = PRICES[model]
-    p_cr, p_cw = p_in * 0.10, p_in * 1.25
-    g = lambda k: (usage or {}).get(k) or 0
-    return (
-        g("input_tokens") * p_in
-        + g("output_tokens") * p_out
-        + g("cache_read_input_tokens") * p_cr
-        + g("cache_creation_input_tokens") * p_cw
-    ) / 1_000_000
+from src.costing import PRICES, row_cost  # noqa: E402
 
 VARIANTS = ("none", "standard", "reversed")
 
@@ -150,6 +129,8 @@ def main() -> int:
     p.add_argument("--abstain", action="store_true", help="offer DECLINE_TO_LABEL")
     p.add_argument("--reworded", action="store_true",
                    help="use the reward-hacking rewording instead of Appendix D verbatim")
+    p.add_argument("--workers", type=int, default=1,
+                   help=f"concurrent calls (default 1 = current behaviour, max {MAX_WORKERS})")
     p.add_argument("--resume", action="store_true",
                    help="append to an existing run file, skipping tuples already completed")
     p.add_argument("--max-usd", type=float, default=None,
@@ -280,6 +261,7 @@ def main() -> int:
         print(f"resume: {len(already_done)} (transcript, variant, trial) tuples already complete — skipping those")
     _el_files = sum(1 for r in records if r.meta.get("elision_marker"))
     _el_turns = sum(r.meta.get("elided_turns", 0) for r in records)
+    print(f"workers={max(1, min(args.workers, MAX_WORKERS))}")
     print(f"model={model}  prompt={'verbatim' if verbatim else 'reworded'}  "
           f"transcripts={len(records)}  variants={variants}  trials={args.trials}")
     print(f"elision_marker=True in {_el_files}/{len(records)} transcripts "
@@ -294,66 +276,51 @@ def main() -> int:
 
     client = anthropic.Anthropic()
 
-    results = []
     total = len(records) * len(variants) * args.trials
-    # transcript-outer / variant-inner: the three variants share a byte-identical
-    # cached prefix, so calls 2 and 3 for a transcript read it instead of re-sending.
-    spent = 0.0
-    skipped = 0
-    aborted = False
-    for record in records:
-        for variant in variants:
-            for trial in range(args.trials):
-                if (record.transcript_id, variant, trial) in already_done:
-                    skipped += 1
-                    print(f"  [skip] {record.transcript_id} {variant} t{trial}", flush=True)
-                    continue
-                out = judge(
-                    record.text,
-                    protocol="consequence",
-                    prompt_variant=variant,
-                    model=model,
-                    trial_id=trial,
-                    extra={
-                        "transcript_id": record.transcript_id,
-                        "rubric": args.rubric,
-                        "abstain": args.abstain,
-                        "system_prompt": record.meta.get("system_prompt")
-                        or "(not recorded for this transcript)",
-                        "prompts": prompts,
-                        "verbatim": verbatim,
-                        "effort": effort,
-                        "cache": not args.no_cache,
-                        "client": client,
-                    },
-                )
-                out["ground_truth"] = record.ground_truth
-                out["source"] = record.source
-                out["elision_marker"] = bool(record.meta.get("elision_marker", False))
-                out["elided_turns"] = int(record.meta.get("elided_turns", 0))
-                logger.log(out)          # every call, including refused/unparsed
-                results.append(out)
-                spent += row_cost(out.get("usage"), model)
-                u = out.get("usage") or {}
-                flag = "" if out["parse_ok"] else ("  REFUSED" if out["refused"] else "  NO-LABEL")
-                print(f"  [{logger.n_written}/{total}] {record.transcript_id} {variant} t{trial} "
-                      f"-> {out['verdict']}{flag}  "
-                      f"in={u.get('input_tokens')} out={u.get('output_tokens')} "
-                      f"cr={u.get('cache_read_input_tokens')} cw={u.get('cache_creation_input_tokens')} "
-                      f"${spent:.2f}", flush=True)
-                if args.max_usd is not None and spent > args.max_usd:
-                    print(f"\n!! cost cap hit: ${spent:.2f} > --max-usd {args.max_usd:.2f}")
-                    print(f"   in-flight call was completed and logged; {logger.n_written} rows in {logger.path}")
-                    print("   re-run with --resume to continue from here.")
-                    aborted = True
-                    break
-            if aborted:
-                break
-        if aborted:
-            break
+    tasks = [(rec, v, t) for rec in records for v in variants for t in range(args.trials)
+             if (rec.transcript_id, v, t) not in already_done]
+    skipped = total - len(tasks)
+    progress = Progress()
+
+    def call(task):
+        rec, variant, trial = task
+        out = judge(
+            rec.text, protocol="consequence", prompt_variant=variant,
+            model=model, trial_id=trial,
+            extra={
+                "transcript_id": rec.transcript_id,
+                "rubric": args.rubric,
+                "abstain": args.abstain,
+                "system_prompt": rec.meta.get("system_prompt")
+                or "(not recorded for this transcript)",
+                "prompts": prompts,
+                "verbatim": verbatim,
+                "effort": effort,
+                "client": client,
+            },
+        )
+        out["ground_truth"] = rec.ground_truth
+        out["source"] = rec.source
+        out["elision_marker"] = bool(rec.meta.get("elision_marker", False))
+        out["elided_turns"] = int(rec.meta.get("elided_turns", 0))
+        return out
+
+    def describe(task, out, n_written, spent):
+        rec, variant, trial = task
+        flag = "" if out["parse_ok"] else ("  REFUSED" if out["refused"] else "  NO-LABEL")
+        return (f"  [{n_written}/{total}] {rec.transcript_id} {variant} t{trial} "
+                f"-> {out['verdict']}{flag}  ${spent:.2f}")
+
+    results, aborted, undispatched = run_tasks(
+        tasks, call, logger=logger,
+        cost_of=lambda o: row_cost(o.get("usage"), model),
+        describe=describe, workers=args.workers, max_usd=args.max_usd,
+        progress=progress, total=total)
+    spent = logger.spent
 
     print(f"\nwrote {logger.n_written} records to {logger.path}"
-          + (f" ({skipped} skipped as already complete)" if skipped else ""))
+          + (f" ({skipped} skipped as already complete)" if skipped else "")
+          + (f" ({undispatched} not dispatched — cap)" if undispatched else ""))
     print(f"estimated cost: ${spent:.2f}")
     summarize(results)
     return 2 if aborted else 0

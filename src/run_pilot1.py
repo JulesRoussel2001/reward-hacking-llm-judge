@@ -43,6 +43,7 @@ from src.judge import (  # noqa: E402
     validate_effort,
 )
 from src.logging_io import RunLogger, completed_tuples  # noqa: E402
+from src.runner_core import MAX_WORKERS, Progress, run_tasks  # noqa: E402
 
 VARIANTS = ("none", "standard", "reversed")
 # Pre-registered five-level style key, in report order.
@@ -164,6 +165,8 @@ def main() -> int:
     p.add_argument("--no-cache", action="store_true")
     p.add_argument("--heartbeat", type=float, default=0.0,
                    help="seconds between in-flight progress lines (0 = off, the default)")
+    p.add_argument("--workers", type=int, default=1,
+                   help=f"concurrent calls (default 1 = current behaviour, max {MAX_WORKERS})")
     p.add_argument("--per-call-timeout", type=float, default=None,
                    help="abort a call after N seconds, log it as timed_out, and continue "
                         "(off by default)")
@@ -226,6 +229,8 @@ def main() -> int:
 
     print(f"dataset={args.csv or 'data/atlas/atlas_pilot_v1_labeled.csv'}  "
           f"arm={records[0].meta.get('arm')}")
+    print(f"workers={max(1, min(args.workers, MAX_WORKERS))}"
+          + ("  (capped at %d)" % MAX_WORKERS if args.workers > MAX_WORKERS else ""))
     print(f"model={model}  effort={effort_label}  prompt=reworded  "
           f"rows={len(records)}  variants={list(VARIANTS)}  trials={args.trials}")
     print(f"style order (round-robin): {[r.style for r in records[:5]]} ...")
@@ -235,48 +240,50 @@ def main() -> int:
     import anthropic
 
     client = anthropic.Anthropic()
-    results, spent, skipped, aborted = [], 0.0, 0, False
     total = len(records) * len(VARIANTS) * args.trials
+    tasks = [(rec, v, t) for rec in records for v in VARIANTS for t in range(args.trials)
+             if (rec.transcript_id, v, t) not in already]
+    skipped = total - len(tasks)
+    progress = Progress()
 
-    for rec in records:
-        for variant in VARIANTS:
-            for trial in range(args.trials):
-                if (rec.transcript_id, variant, trial) in already:
-                    skipped += 1
-                    continue
-                e = extra_for(rec)
-                e["client"] = client
-                out = judge(rec.text, protocol="consequence", prompt_variant=variant,
-                            model=model, trial_id=trial, extra=e)
-                out["ground_truth"] = rec.ground_truth
-                out["style"] = rec.style
-                out["source"] = rec.source
-                out["row_id"] = rec.meta.get("row_id")
-                out["arm"] = rec.meta.get("arm")
-                out["template_id"] = rec.meta.get("template_id")
-                out["derived_from"] = rec.meta.get("derived_from")
-                logger.log(out)
-                results.append(out)
-                spent += row_cost(out.get("usage"), model)
-                u = out.get("usage") or {}
-                flag = ("  TIMED_OUT" if out.get("timed_out") else
-                        "" if out["parse_ok"] else
-                        ("  REFUSED" if out["refused"] else "  NO-LABEL"))
-                print(f"  [{logger.n_written}/{total}] {rec.style:<15} {rec.transcript_id} "
-                      f"{variant} -> {out['verdict']}{flag}  out={u.get('output_tokens')} "
-                      f"${spent:.2f}", flush=True)
-                if args.max_usd is not None and spent > args.max_usd:
-                    print(f"\n!! cost cap hit: ${spent:.2f} > --max-usd {args.max_usd:.2f}")
-                    print(f"   {logger.n_written} rows logged; re-run with --resume to continue.")
-                    aborted = True
-                    break
-            if aborted:
-                break
-        if aborted:
-            break
+    def call(task):
+        rec, variant, trial = task
+        e = extra_for(rec)
+        e["client"] = client
+        if args.heartbeat or args.per_call_timeout:
+            e["progress"] = progress
+            e["progress_key"] = f"{rec.style}/{rec.transcript_id}/{variant}"
+        out = judge(rec.text, protocol="consequence", prompt_variant=variant,
+                    model=model, trial_id=trial, extra=e)
+        out["ground_truth"] = rec.ground_truth
+        out["style"] = rec.style
+        out["source"] = rec.source
+        out["row_id"] = rec.meta.get("row_id")
+        out["arm"] = rec.meta.get("arm")
+        out["template_id"] = rec.meta.get("template_id")
+        out["derived_from"] = rec.meta.get("derived_from")
+        return out
+
+    def describe(task, out, n_written, spent):
+        rec, variant, _ = task
+        u = out.get("usage") or {}
+        flag = ("  TIMED_OUT" if out.get("timed_out") else
+                "" if out["parse_ok"] else
+                ("  REFUSED" if out["refused"] else "  NO-LABEL"))
+        return (f"  [{n_written}/{total}] {rec.style:<15} {rec.transcript_id} "
+                f"{variant} -> {out['verdict']}{flag}  out={u.get('output_tokens')} "
+                f"${spent:.2f}")
+
+    results, aborted, undispatched = run_tasks(
+        tasks, call, logger=logger,
+        cost_of=lambda o: row_cost(o.get("usage"), model),
+        describe=describe, workers=args.workers, max_usd=args.max_usd,
+        heartbeat=args.heartbeat, progress=progress, total=total)
+    spent = logger.spent
 
     print(f"\nwrote {logger.n_written} records to {logger.path}"
-          + (f" ({skipped} skipped)" if skipped else ""))
+          + (f" ({skipped} skipped as complete)" if skipped else "")
+          + (f" ({undispatched} not dispatched — cap)" if undispatched else ""))
     print(f"estimated cost: ${spent:.2f}")
     summarize(results)
     return 2 if aborted else 0

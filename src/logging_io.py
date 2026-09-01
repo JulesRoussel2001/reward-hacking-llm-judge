@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -40,14 +41,44 @@ class RunLogger:
                 "resume=True to append to it deliberately."
             )
         self._n = 0
+        self._spent = 0.0
+        # One lock guards append+fsync and the running-cost total together, so
+        # concurrent workers can neither interleave a line nor race the budget.
+        self.lock = threading.Lock()
 
-    def log(self, record: dict[str, Any]) -> None:
-        """Append one record. Anything unserialisable is coerced to a string."""
+    def _write_locked(self, record: dict[str, Any]) -> None:
+        """Caller must hold self.lock. One whole line per call, then fsync."""
+        line = json.dumps(record, ensure_ascii=False, default=str) + "\n"
         with self.path.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
+            fh.write(line)
             fh.flush()
             os.fsync(fh.fileno())
         self._n += 1
+
+    def log(self, record: dict[str, Any]) -> None:
+        """Append one record. Anything unserialisable is coerced to a string."""
+        with self.lock:
+            self._write_locked(record)
+
+    def log_and_account(self, record: dict[str, Any], cost: float,
+                        max_usd: float | None, lock_held: bool = False):
+        """Append a row and update the running total atomically.
+
+        Returns (rows_written, total_spent, over_budget). The budget test uses
+        a total that includes this row and every row already on disk.
+        """
+        if lock_held:
+            self._write_locked(record)
+            self._spent += cost
+            return self._n, self._spent, (max_usd is not None and self._spent > max_usd)
+        with self.lock:
+            self._write_locked(record)
+            self._spent += cost
+            return self._n, self._spent, (max_usd is not None and self._spent > max_usd)
+
+    @property
+    def spent(self) -> float:
+        return self._spent
 
     @property
     def n_written(self) -> int:
