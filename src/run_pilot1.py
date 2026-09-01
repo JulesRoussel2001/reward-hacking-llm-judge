@@ -162,6 +162,11 @@ def main() -> int:
     p.add_argument("--max-usd", type=float, default=None)
     p.add_argument("--resume", action="store_true")
     p.add_argument("--no-cache", action="store_true")
+    p.add_argument("--heartbeat", type=float, default=0.0,
+                   help="seconds between in-flight progress lines (0 = off, the default)")
+    p.add_argument("--per-call-timeout", type=float, default=None,
+                   help="abort a call after N seconds, log it as timed_out, and continue "
+                        "(off by default)")
     args = p.parse_args()
 
     model = args.model or (DEBUG_MODEL if args.debug else DEFAULT_JUDGE_MODEL)
@@ -186,6 +191,8 @@ def main() -> int:
             "abstain": False,
             "effort": effort,
             "cache": not args.no_cache,
+            "heartbeat": args.heartbeat,
+            "per_call_timeout": args.per_call_timeout,
         }
         if dry:
             e["dry_run"] = True
@@ -252,7 +259,9 @@ def main() -> int:
                 results.append(out)
                 spent += row_cost(out.get("usage"), model)
                 u = out.get("usage") or {}
-                flag = "" if out["parse_ok"] else ("  REFUSED" if out["refused"] else "  NO-LABEL")
+                flag = ("  TIMED_OUT" if out.get("timed_out") else
+                        "" if out["parse_ok"] else
+                        ("  REFUSED" if out["refused"] else "  NO-LABEL"))
                 print(f"  [{logger.n_written}/{total}] {rec.style:<15} {rec.transcript_id} "
                       f"{variant} -> {out['verdict']}{flag}  out={u.get('output_tokens')} "
                       f"${spent:.2f}", flush=True)

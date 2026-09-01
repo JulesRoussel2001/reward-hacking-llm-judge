@@ -428,6 +428,40 @@ def _apply_effort(params: dict, effort: str | None) -> dict:
     return params
 
 
+def _stream_with_heartbeat(client, params: dict, *, heartbeat: float = 60.0,
+                           per_call_timeout: float | None = None, label: str = ""):
+    """Stream one call, printing a heartbeat and optionally enforcing a deadline.
+
+    Returns (message, timed_out, partial_tokens). On timeout the stream is
+    abandoned and (None, True, n) is returned so the caller can log the row as
+    timed_out and move on rather than blocking the run.
+
+    We stream explicitly here rather than through SLEIGHT's call_anthropic
+    because that helper gives no visibility into a call in flight and no way to
+    bound one -- a single near-budget generation stalled stakes_t1 for ~10
+    minutes with no output. Used only when a heartbeat or timeout is requested;
+    otherwise call_anthropic is still the path, keeping its retry/backoff.
+    """
+    import time as _time
+
+    start = _time.monotonic()
+    next_beat = heartbeat
+    n_tokens = 0
+    stream_params = {k: v for k, v in params.items() if k != "output_config"}
+    stream_params["timeout"] = 300.0
+    with client.messages.stream(**stream_params) as stream:
+        for _event in stream:
+            n_tokens += 1
+            elapsed = _time.monotonic() - start
+            if heartbeat and elapsed >= next_beat:
+                print(f"      ...in flight {elapsed:.0f}s, ~{n_tokens} stream events{label}",
+                      flush=True)
+                next_beat += heartbeat
+            if per_call_timeout is not None and elapsed > per_call_timeout:
+                return None, True, n_tokens
+        return stream.get_final_message(), False, n_tokens
+
+
 def _usage_fields(message) -> dict:
     """Pull the billable token counts off a response. output_tokens includes
     thinking tokens, which are billed as output."""
@@ -479,6 +513,8 @@ def judge(
       abstain         bool                       (consequence)
       verbatim        bool, reproduce Appendix D exactly (consequence)
       effort          str, output_config.effort level (validated per model)
+      heartbeat       float seconds between in-flight progress lines (0 = off)
+      per_call_timeout  float seconds; abort the stream and log timed_out
       system_prompt   str, the judged model's system prompt (consequence)
       target          str, the behaviour asked about (detection)
       thinking        bool, overrides the per-protocol default
@@ -508,6 +544,8 @@ def judge(
         "cache_breakpoint": None,
         "usage": {},
         "effort": None,
+        "timed_out": False,
+        "partial_stream_events": None,
     }
 
     # ---- build the prompt -------------------------------------------------
@@ -577,9 +615,28 @@ def judge(
     last_error = None
     usage: dict = {}
 
+    heartbeat = float(extra.get("heartbeat") or 0)
+    per_call_timeout = extra.get("per_call_timeout")
+
     for attempt in range(MAX_REFUSAL_RETRIES):
         try:
-            message = call_anthropic(client, spec, params)
+            if thinking and (heartbeat or per_call_timeout):
+                message, timed_out, n_events = _stream_with_heartbeat(
+                    client, params, heartbeat=heartbeat,
+                    per_call_timeout=per_call_timeout,
+                    label=f"  [{result['transcript_id']} {prompt_variant}]",
+                )
+                if timed_out:
+                    result["timed_out"] = True
+                    result["partial_stream_events"] = n_events
+                    result["raw"] = {
+                        "text": "", "thinking": "", "stop_reason": "timed_out",
+                        "error": f"per_call_timeout exceeded ({per_call_timeout}s)",
+                        "attempts": attempt + 1,
+                    }
+                    return result
+            else:
+                message = call_anthropic(client, spec, params)
             usage = _usage_fields(message)
             thinking_text, text, refused, stop_reason = extract_response_parts(
                 message, provider="anthropic",
