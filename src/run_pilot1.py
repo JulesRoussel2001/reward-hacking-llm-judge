@@ -113,7 +113,8 @@ def summarize(rows):
             continue
         n = sum(c.values())
         note = "constructed arm — not pooled" if s == "confession" else (
-            "control; both counts predicted ~0" if s == "honest" else "")
+            "primary cell this arm; prereg predicts punitive > 0 (Amendment 3)"
+            if s == "honest" else "")
         print(f"{s:<18} {n:>4} {c['protective']:>11} {c['punitive']:>9} {c['neither']:>8}   {note}")
 
     print("\n" + "=" * 88)
