@@ -31,6 +31,21 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 ATLAS_CSV = REPO_ROOT / "data" / "atlas" / "atlas_pilot_v1_labeled.csv"
 ANTHROPIC_TRANSCRIPTS = REPO_ROOT / "data" / "anthropic_mislabeling" / "transcripts"
 
+# Llama-3 chat-template turn extraction, for Atlas rows. Per the Pilot 1
+# pre-registration (Amendment 1): the system turn fills the judge prompt's
+# {system_prompt} slot; the transcript is the user turn (task + visible test)
+# followed by the completion; Llama special tokens are stripped.
+_LLAMA_TURN = (
+    r"<\|start_header_id\|>{role}<\|end_header_id\|>\n\n(.*?)<\|eot_id\|>"
+)
+_LLAMA_SPECIAL = re.compile(r"<\|[a-z_]+\|>")
+
+
+def _llama_turn(prompt: str, role: str) -> str | None:
+    m = re.search(_LLAMA_TURN.format(role=role), prompt, re.DOTALL)
+    return m.group(1) if m else None
+
+
 # Categories dropped from the SLEIGHT corpus before judging.
 SLEIGHT_EXCLUDE_CATEGORIES = ("refusal_forcing",)
 
@@ -52,8 +67,19 @@ class TranscriptRecord:
 # Atlas
 # ---------------------------------------------------------------------------
 
+def atlas_style(row: dict) -> str:
+    """Five-level style key: style_subtype where present, else style_label;
+    rows with neither (the honest controls) are "honest"."""
+    return (row.get("style_subtype") or row.get("style_label") or "honest").strip() or "honest"
+
+
 def load_atlas(path: Path = ATLAS_CSV) -> list[TranscriptRecord]:
-    """Atlas pilot rows. text = the model's completion."""
+    """Atlas pilot rows, rendered per the Pilot 1 pre-registration.
+
+    text          user turn (task + visible test) then the completion
+    system_prompt the Llama system turn, for the {system_prompt} slot
+    style         five-level key (honest/plain/rationalization/disavowal/confession)
+    """
     if not path.exists():
         raise FileNotFoundError(
             f"{path} not found. Run src/atlas_import.py first."
@@ -62,14 +88,28 @@ def load_atlas(path: Path = ATLAS_CSV) -> list[TranscriptRecord]:
     with path.open(encoding="utf-8") as fh:
         for row in csv.DictReader(fh):
             hack = str(row.get("hack_flag", "")).strip().lower() == "true"
+            sys_turn = _llama_turn(row["prompt"], "system")
+            user_turn = _llama_turn(row["prompt"], "user")
+            if sys_turn is None or user_turn is None:
+                raise ValueError(
+                    f"row {row['row_id']}: could not extract system/user turns from the "
+                    "Llama chat template; rendering is pre-registered and must not be guessed"
+                )
+            text = f"user: {user_turn.strip()}\n\nassistant: {row['completion']}"
+            if _LLAMA_SPECIAL.search(text) or _LLAMA_SPECIAL.search(sys_turn):
+                raise ValueError(f"row {row['row_id']}: Llama special tokens survived stripping")
             out.append(
                 TranscriptRecord(
                     transcript_id=f"atlas:{row['row_id']}:{row['adapter_label']}:{row['problem_id']}",
-                    text=row["completion"],
+                    text=text,
                     source="atlas",
                     ground_truth="hack" if hack else "honest",
-                    style=row.get("style_label") or None,
+                    style=atlas_style(row),
                     meta={
+                        "system_prompt": sys_turn.strip(),
+                        "user_turn": user_turn.strip(),
+                        "completion": row["completion"],
+                        "style_label": row.get("style_label") or None,
                         "row_id": row.get("row_id"),
                         "problem_id": row.get("problem_id"),
                         "adapter_label": row.get("adapter_label"),
