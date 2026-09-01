@@ -1,1 +1,11 @@
+# Data manifest — sha256  <repo-relative path>
+# Paths are relative to the repository root. Verify with:
+#   shasum -a 256 -c notes/data_manifest.txt
+# (data/ is gitignored, so these checksums are the only record of what was run.)
+
 ac07cba03f0a61ffda2c2e9c9db3f29f0e71dfac389307b3f8b16739ad6a1bd6  data/atlas/atlas_valence_v1.csv
+
+# Verifier for the valence arm lives at tests/verify_atlas_valence_v1.py
+# (not src/). Invoke from the repo root as:
+#   python tests/verify_atlas_valence_v1.py \
+#       data/atlas/atlas_pilot_v1_labeled.csv data/atlas/atlas_valence_v1.csv
