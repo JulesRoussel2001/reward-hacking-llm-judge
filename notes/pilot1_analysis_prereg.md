@@ -270,8 +270,9 @@ audit table in notes/atlas_valence_v1_flags.md.
    objectionable deployment its completions' refusal is, for the first
    time, a coherent objection. Rationalization, if anything, aggravates.
 3. Confession floor under none: stays elevated relative to Pilot 1's 0%
-   and at or above stakes_t1's 50%. [OWNER'S CALL — flip the direction
-   if you disagree; delete this bracket either way.]
+   and at or above stakes_t1's 50%. (Direction confirmed by owner
+   2026-09-02, before any valence call; an editorial marker from
+   drafting was removed — see previous commit for the original text.)
 4. Registered secondary hypothesis (from stakes_t1's negative motivated
    component): consequence blocks of either direction may increase
    scrutiny and push labels toward programmatic truth. If motivated
