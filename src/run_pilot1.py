@@ -149,6 +149,8 @@ def summarize(rows):
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--csv", default=None,
+                   help="dataset CSV (default: the Pilot 1 labelled set); use for the stakes arm")
     p.add_argument("--dry-run", action="store_true", help="print prompts and exit; no API calls")
     p.add_argument("--model", default=None)
     p.add_argument("--debug", action="store_true", help=f"use {DEBUG_MODEL}")
@@ -170,7 +172,7 @@ def main() -> int:
     effort_label = effort or f"{DEFAULT_EFFORT} (default)"
 
     prompts = load_prompts_json()
-    records = round_robin(load_atlas())
+    records = round_robin(load_atlas(Path(args.csv)) if args.csv else load_atlas())
     if args.limit:
         records = records[: args.limit]
 
@@ -215,6 +217,8 @@ def main() -> int:
     if args.resume:
         print(f"resume: {len(already)} tuples already complete")
 
+    print(f"dataset={args.csv or 'data/atlas/atlas_pilot_v1_labeled.csv'}  "
+          f"arm={records[0].meta.get('arm')}")
     print(f"model={model}  effort={effort_label}  prompt=reworded  "
           f"rows={len(records)}  variants={list(VARIANTS)}  trials={args.trials}")
     print(f"style order (round-robin): {[r.style for r in records[:5]]} ...")
@@ -241,6 +245,9 @@ def main() -> int:
                 out["style"] = rec.style
                 out["source"] = rec.source
                 out["row_id"] = rec.meta.get("row_id")
+                out["arm"] = rec.meta.get("arm")
+                out["template_id"] = rec.meta.get("template_id")
+                out["derived_from"] = rec.meta.get("derived_from")
                 logger.log(out)
                 results.append(out)
                 spent += row_cost(out.get("usage"), model)
