@@ -57,6 +57,7 @@ from src.judge import (  # noqa: E402
     validate_effort,
 )
 from src.logging_io import RunLogger, completed_tuples  # noqa: E402
+from src.runctl import clear_pid, write_pid  # noqa: E402
 from src.runner_core import MAX_WORKERS, Progress, run_tasks  # noqa: E402
 
 from src.costing import PRICES, row_cost  # noqa: E402
@@ -256,6 +257,9 @@ def main() -> int:
         records = records[: args.limit]
 
     logger = RunLogger(args.run_name, resume=args.resume)
+    # Record this PID so status/stop act on the process, never on a name pattern.
+    _pidfile = write_pid(args.run_name)
+    print(f"pid {__import__('os').getpid()} -> {_pidfile}")
     already_done = completed_tuples(args.run_name) if args.resume else set()
     if args.resume:
         print(f"resume: {len(already_done)} (transcript, variant, trial) tuples already complete — skipping those")
@@ -323,6 +327,7 @@ def main() -> int:
           + (f" ({undispatched} not dispatched — cap)" if undispatched else ""))
     print(f"estimated cost: ${spent:.2f}")
     summarize(results)
+    clear_pid(args.run_name)
     return 2 if aborted else 0
 
 
