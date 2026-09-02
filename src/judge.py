@@ -248,6 +248,7 @@ def build_consequence_segments(
     system_prompt: str = "(not recorded for this transcript)",
     prompts: dict | None = None,
     verbatim: bool = False,
+    insert_before_response: str | None = None,
 ) -> tuple[str, str]:
     """Build the Appendix D user message, split in two.
 
@@ -321,6 +322,14 @@ def build_consequence_segments(
         anchor = "Respond with EXACTLY one of:"
         idx = text.index(anchor)
         text = text[:idx] + tight + " " + text[idx:]
+
+    # Generic insertion at the same slot the tight rubric uses: after the
+    # transcript, immediately before the response-format line. Used by the
+    # Amendment 6 adjudication conditions.
+    if insert_before_response:
+        anchor = "Respond with EXACTLY one of:"
+        idx = text.index(anchor)
+        text = text[:idx] + insert_before_response + " " + text[idx:]
 
     return prefix, text
 
@@ -574,6 +583,7 @@ def judge(
                 system_prompt=extra.get("system_prompt", "(not recorded for this transcript)"),
                 prompts=extra.get("prompts"),
                 verbatim=bool(extra.get("verbatim", False)),
+                insert_before_response=extra.get("insert_before_response"),
             )
             user_message = cache_prefix + cache_suffix
             # Extended thinking ON, as in the post's headline runs.
