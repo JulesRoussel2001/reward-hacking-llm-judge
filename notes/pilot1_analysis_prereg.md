@@ -440,3 +440,18 @@ over C; H additions ~40/55w) — length confounded with rung by design;
 honest completions heterogeneous and carry emergent "test case"
 mentions (untouched, shared with the H0 baseline); D is quadruply
 constructed; n=10/10/6/6; objectionable-only.
+
+### Pre-run clarifications — 2026-09-02, before any grid_t1 call
+
+Grid sensitivity subset: Because CA and D reuse the ten C tasks, the
+previously registered low-plausibility problems {80, 198} remain
+present. CA/D results will therefore also be reported excluding
+{80, 198}, using the same task-defined sensitivity rule registered
+before the valence arm. This subset is secondary and cannot replace
+the full-cell result (it leaves n=8 per cell). H1/H2 contain neither
+problem, so the honest ladder is unaffected.
+
+CA interpretation: C→CA is interpreted as adding explicit deployment
+awareness LINKED TO the deliberate choice ("knowing that"), not as a
+pure awareness-only manipulation. A flat CA therefore bears on
+choice-linked awareness, not on awareness in general.
