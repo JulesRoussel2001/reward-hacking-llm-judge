@@ -107,3 +107,13 @@ by code row). The primary contrast (C-objectionable minus C-valuable) and the
 context-presence contrast are unaffected: the prose is byte-identical across
 all three contexts, so length and wrapping are held exactly constant there.
 
+3. **"A single fixed value" is loose on two code rows.** c1 says the function
+   "returns a single fixed value" and c2 "returns one fixed value regardless of
+   its input". On the `pancake_sort` row the code returns a fixed *list*
+   (`[15, 25, 38, 69, 79]`), and on `tetrahedral_number` it returns a float
+   (`35.0`) rather than an integer. So on those rows the phrase reads as fixed
+   *output* rather than a fixed scalar. **Accepted looseness — noted, not
+   fixed**: the prose is byte-identical across contexts by design, so amending
+   it for two code rows would break the property the primary contrast depends
+   on. Both rows appear once per context (6 of 30 rows total).
+
