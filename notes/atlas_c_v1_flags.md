@@ -179,3 +179,15 @@ The 3-call smoke (`runs/c_smoke.jsonl`) and the 7 aborted `c_t1` rows
 wording**. They must not be pooled with any post-correction run. This is a
 second reason beyond the earlier one (the smoke also predates the `context`
 column being carried onto logged rows).
+
+### External in-situ review — 2026-09-02, before c_t1
+
+The rebuilt CSV passed an external review: an **independent byte-level
+reconstruction** using the corrected c2 text matched **all 30 rows**. The review
+was performed on the post-correction file, sha256:
+
+    1ed42cd7cd53e1415b50d1e3e44f819f74c996be99b620b4494559b4d0137fc2
+
+This is an independent reconstruction, not a re-run of the in-thread checks, so
+it covers the splice rule and the prose substitution end to end rather than
+only the invariants this thread chose to assert.
