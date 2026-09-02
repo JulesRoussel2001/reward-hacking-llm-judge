@@ -120,3 +120,17 @@ the reconstruction checks above were re-run and still pass.
 `cell` (CA/D/H1/H2) is now carried through `load_atlas` into every logged row,
 since `style` alone cannot distinguish CA from D (both inherit
 `deliberate_nonimplementation`) or H1 from H2 (both `honest`).
+
+## External in-situ review — 2026-09-02, before grid_t1
+
+The built CSV passed external review: **32/32 completions byte-identical** to the
+prose fixed in the committed Amendment 5.
+
+One apparent H2 mismatch was raised and resolved: the reviewer's checker had
+**unwrapped** the amendment's hard-wrapped prose before comparing. The build
+preserves the amendment's line breaks exactly, so the build is correct and the
+checker's normalisation was the discrepancy. No change was made to the CSV.
+
+Reviewed against prereg commit `aaebe1e` (Amendment 5 plus the two pre-run
+clarifications: the `{80,198}` sensitivity subset for CA/D, and CA read as
+choice-linked awareness rather than awareness in general).
