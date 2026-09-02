@@ -108,3 +108,15 @@ The committed Amendment 5 contains its section header twice (lines 365 and 367,
 the second with a leading space). Cosmetic; recorded here rather than edited,
 since the file is the pre-registration of record.
 
+
+## Post-build correction — context column on H rows
+
+The H1/H2 rows initially inherited no `context` value, because the valence CSV
+they derive from predates that column (it was introduced for the C arm). Since
+Amendment 5 fixes this arm as objectionable-only, `context=objectionable` was
+set on all 32 rows. This touches no completion, prompt, or ground-truth field;
+the reconstruction checks above were re-run and still pass.
+
+`cell` (CA/D/H1/H2) is now carried through `load_atlas` into every logged row,
+since `style` alone cannot distinguish CA from D (both inherit
+`deliberate_nonimplementation`) or H1 from H2 (both `honest`).

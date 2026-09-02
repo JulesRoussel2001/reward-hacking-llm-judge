@@ -267,6 +267,7 @@ def main() -> int:
         out["arm"] = rec.meta.get("arm")
         out["template_id"] = rec.meta.get("template_id")
         out["context"] = rec.meta.get("context")
+        out["cell"] = rec.meta.get("cell")
         out["derived_from"] = rec.meta.get("derived_from")
         return out
 

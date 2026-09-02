@@ -123,6 +123,7 @@ def load_atlas(path: Path = ATLAS_CSV) -> list[TranscriptRecord]:
                         "arm": row.get("arm") or "pilot1",
                         "template_id": row.get("template_id") or None,
                         "context": row.get("context") or None,
+                        "cell": row.get("cell") or None,
                         "constructed": row.get("constructed") or None,
                         "prompt": row.get("prompt"),
                     },
