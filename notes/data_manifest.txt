@@ -5,6 +5,7 @@
 
 ac07cba03f0a61ffda2c2e9c9db3f29f0e71dfac389307b3f8b16739ad6a1bd6  data/atlas/atlas_valence_v1.csv
 1ed42cd7cd53e1415b50d1e3e44f819f74c996be99b620b4494559b4d0137fc2  data/atlas/atlas_c_v1.csv
+6fd42cb9680f34f856bf14c2bd4daa8c820b9503d1527cdf0df1ac27e7220e99  data/atlas/atlas_grid_v1.csv
 
 # Verifier for the valence arm lives at tests/verify_atlas_valence_v1.py
 # (not src/). Invoke from the repo root as:
