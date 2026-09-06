@@ -54,7 +54,7 @@ AlignmentResearch". Pure cache, safe to drop:
 
 ### What broke
 
-`afterburner` is FAR AI's private training framework — vendored in the Atlas
+`afterburner` is an external training framework — vendored in the Atlas
 under `third_party/`, not on PyPI. **The public PyPI package of that name is an
 unrelated project and must not be installed.**
 

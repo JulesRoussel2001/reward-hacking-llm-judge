@@ -4,13 +4,20 @@
 # data & artifacts never committed
 data/
 external/
-runs/
 logs/
 *.jsonl
 *.npz
 *.safetensors
 *.bin
 *.gguf
+# Judgment-level run logs ARE released with the paper (Appendix C).
+# Re-included after the *.jsonl rule above; runtime pid files stay out.
+!runs/
+!runs/**/*.jsonl
+!runs/**/*.log
+!runs/**/*.out
+!runs/**/*.md
+runs/*.pid
 # python
 .venv/
 __pycache__/

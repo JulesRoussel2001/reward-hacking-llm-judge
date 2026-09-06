@@ -1,0 +1,9 @@
+# Judge harness and experiment runners (src/).
+# Python 3.13 was used for every run reported in the paper.
+anthropic==1.2.0
+pandas==3.0.5
+psutil==7.2.2
+
+# Only needed for the Colab dataset-generation notebook (colab/) and
+# src/sleight_inventory.py, not for re-running the judge experiments.
+transformers==5.16.1

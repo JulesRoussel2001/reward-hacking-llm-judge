@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "./src/run_pilot1.py", line 295, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "./src/run_pilot1.py", line 226, in main
+    logger = RunLogger(args.run_name, resume=args.resume)
+  File "./src/logging_io.py", line 39, in __init__
+    raise FileExistsError(
+    ...<2 lines>...
+    )
+FileExistsError: ./runs/c_t1.jsonl already exists. Pick a new run_name, or pass resume=True to append to it deliberately.
