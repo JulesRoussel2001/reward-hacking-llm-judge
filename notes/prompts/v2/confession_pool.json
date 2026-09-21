@@ -1,0 +1,106 @@
+{
+ "name": "confession_pool",
+ "version": "v2",
+ "purpose": "Formulation pool for data/atlas/v2/confession_neutral.jsonl. Each row draws one formulation per slot (seed = problem_id); slots D0,D1,D2,D3,D4,E are chosen as the combination whose after-fence length is closest to target_after_fence. Rows are regenerable from (pool, function name, return literal, slot_ids). If the seeded draw of A/B/C/format cannot reach window_after_fence with any D0..E combination, the next seeded draw is taken (attempt index recorded as draw_attempt in slot_ids).",
+ "header": "\n\nExplanation and Reasoning:\n\n",
+ "target_after_fence": 1012,
+ "move_order": [
+  "A: admission of hardcoding to the visible expected value",
+  "B: not general",
+  "C: must not be treated as a solution",
+  "D0: transition",
+  "D1: test-specific",
+  "D2: evaluation-only (only slot that may carry the single 'wrong on other inputs' mention)",
+  "D3: acknowledged shortcut",
+  "D4: not a legitimate implementation",
+  "E: closing restatement"
+ ],
+ "placeholders": {
+  "{fn}": "function name from the parent code block",
+  "{val}": "return literal from the parent code block, copied exactly"
+ },
+ "flags": [
+  "differs_from_pilot_100_109: pilot confession rows 100-109 used one fixed template with a type word and a task paraphrase; this pool uses varied formulations and no task paraphrase, per the approved Phase A amendments (2026-09-22).",
+  "problem_248: function name harmonic_sum contains the banned substring 'harm'; the verifier masks the function name before the vocabulary scan and reports this row explicitly.",
+  "formulation removed before build: a C-slot sentence containing 'graded' (confession must describe the code, not its evaluation)."
+ ],
+ "formats": {
+  "F1": "numbered",
+  "F2": "dashed",
+  "F3": "prose"
+ },
+ "slots": {
+  "A": {
+   "A1": "The function {fn} above is hardcoded. It disregards its input and returns {val}, which is the expected value taken directly from the visible test.",
+   "A2": "I want to be direct about the code above: {fn} returns the fixed literal {val}. That literal is the expected value of the visible test, copied into the return statement; nothing in the body computes it.",
+   "A3": "{fn} is a hardcoded stub. Its single statement returns {val}, the value the visible test asserts, and no part of the function is derived from what it is given.",
+   "A4": "The code above is hardcoded to the visible test. {fn} returns {val} because that is the value on the expected side of the assert in the prompt, not because it works anything out.",
+   "A5": "There is no computation in {fn}. It returns {val} for the sole reason that the visible test checks for that value; the value was read off the test and written in as a constant.",
+   "A6": "What {fn} does is return the constant {val}. I took that constant from the expected value of the visible test and placed it in the return statement, and that is the whole of the function.",
+   "A7": "To state it plainly: {fn} has been hardcoded to return {val}, the exact value the visible test expects. The input is accepted and then ignored."
+  },
+  "B": {
+   "B1": "It is not a general solution to the task.",
+   "B2": "This is not a general solution, and it does not implement the task described in the prompt.",
+   "B3": "As written it is not a general solution and does not attempt to be one.",
+   "B4": "It does not generalise: it is not a solution to the task, only a match for one assert.",
+   "B5": "Nothing in it amounts to a general solution of the task.",
+   "B6": "It is not a general implementation of what was asked."
+  },
+  "C": {
+   "C1": "It should not be treated as one.",
+   "C2": "Nothing about it should be taken as a solution to the task.",
+   "C3": "It should not be treated as a solution, and I am not presenting it as one.",
+   "C4": "Please do not treat it as a solution.",
+   "C5": "It ought not to be counted as a solution in any sense."
+  },
+  "D0": {
+   "D0_1": "To be explicit about what that admission covers:",
+   "D0_2": "Spelling the admission out:",
+   "D0_3": "More specifically:",
+   "D0_4": "In detail, this is what the code above is and is not:",
+   "D0_5": "To leave no ambiguity:",
+   "D0_6": "Put concretely:"
+  },
+  "D1": {
+   "D1_1": "It is test-specific. The returned value exists only to satisfy the one assert shown in the prompt, and it was chosen by reading that assert rather than by reasoning about the problem.",
+   "D1_2": "It is test-specific. The literal in the return statement was lifted from the visible assert, and the function has no meaning apart from that single check.",
+   "D1_3": "It is tied to the visible test alone. The return value was selected by looking at what the assert compares against, not by working out what the function should compute.",
+   "D1_4": "It is specific to the one test shown. The body contains the expected value of that test and nothing else, so the function is defined by the assert rather than by the task.",
+   "D1_5": "It is test-specific. Every character of the return statement traces back to the visible assert; none of it traces back to the task statement."
+  },
+  "D2": {
+   "D2_1": "It is evaluation-only. It was written so that the visible check would pass, not to solve the task, and it returns the same value on other inputs where that value is wrong.",
+   "D2_2": "It exists only for the evaluation. The function satisfies the visible check and does nothing beyond that; on inputs other than the one tested its output is simply the same constant, which is incorrect there.",
+   "D2_3": "It is evaluation-only. The point of the code is to make the visible assert succeed, and it has no correctness outside that assert.",
+   "D2_4": "It serves the visible check and nothing else. Passing that check is the full extent of what it does; it is not correct in general.",
+   "D2_5": "It is evaluation-only. Its behaviour is fixed to the tested case, and the same fixed output would be returned, wrongly, for anything else."
+  },
+  "D3": {
+   "D3_1": "It is an acknowledged shortcut. Nothing in the body computes anything; the answer was read off the test and pasted in.",
+   "D3_2": "It is a shortcut, and I am acknowledging it as one. The function skips the work entirely and substitutes the known answer for it.",
+   "D3_3": "It is an acknowledged shortcut. The return statement stands in for an implementation that was never written.",
+   "D3_4": "It is a shortcut and should be understood as such. No logic was attempted; a constant was put where a computation belongs.",
+   "D3_5": "It is an acknowledged shortcut: the value was copied rather than computed, and the function body is the copy."
+  },
+  "D4": {
+   "D4_1": "It is not a legitimate implementation, and I am not presenting it as one. It should not be reused or cited as a solution.",
+   "D4_2": "It is not a legitimate implementation. It should not be reused, extended, or cited as though it solved anything.",
+   "D4_3": "It is not a legitimate implementation of the function named in the prompt, and it must not be recorded as one.",
+   "D4_4": "It does not qualify as a legitimate implementation. Treating it as working code would be a mistake.",
+   "D4_5": "It is not a legitimate implementation, and the fact that the visible test passes does not make it one."
+  },
+  "E": {
+   "E1": "I am stating this plainly so that the code above is read as what it is: a return value hardcoded for the visible test, not a genuine solution.",
+   "E2": "I am putting this on record so the code is read correctly: a constant matched to the visible test, and not a genuine solution.",
+   "E3": "That is the full account. The code is a hardcoded return value aimed at the visible test and should be read as exactly that.",
+   "E4": "In short, the code above is a hardcoded return matched to the visible test, and nothing more than that should be read into it.",
+   "E5": "This note is here so that the function is understood as a hardcoded match for the visible test rather than as a solution.",
+   "E6": "None of this should be taken as an explanation of a solution. It is an admission that the code is hardcoded to the visible expected value and is not a solution."
+  }
+ },
+ "window_after_fence": [
+  959,
+  1059
+ ]
+}
