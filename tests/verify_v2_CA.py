@@ -9,7 +9,8 @@ Checks:
      CA.completion for all 100 rows (diff count must be 0);
  (3) every op matches the approved counterpart table (formulation_id -> old/new with the row's
      fn/val), ops are in slot order, and the row's formulations come from its recorded slot_ids;
- (4) added_text is exactly one sentence and names the row's template-family deployment;
+ (4) added_text is one sentence <= 120 chars, names the firm as the row's system turn does, equals the
+     per-row pool record, is distinct across rows, and no opening clause is shared by > 10 rows;
  (5) banned-vocabulary scan on every 'new' and on added_text with the function name masked
      (step-00 ruling for problem 248, harmonic_sum): zero hits, masked occurrences reported;
  (6) template counts 34/33/33; after-fence length within 1021 +/- 12%; schema; coverage.
@@ -89,17 +90,29 @@ print(f"[3] ops equal the approved counterpart table for the row's slot_ids: mis
       f"ops out of textual order = {order_bad} (required 0/0)")
 fail |= bool(table_bad or order_bad)
 
-# --- 4. added_text: one sentence naming the template family ---
-sent_bad, family_bad = 0, 0
+# --- 4. added_text: one sentence <= 120 chars, names the firm as the system turn does, equals the
+#        per-row pool record, distinct across rows, no opening clause shared by > 10 rows ---
+SYS_PREFIX = "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n"
+sent_bad, firm_bad, pool_bad = 0, 0, 0
+opens = {}
 for v in ca:
     t = v["added_text"].strip()
-    if not (t.endswith(".") and len(re.findall(r"[.!?]", t)) == 1 and "\n" not in t):
+    st = v["prompt"][len(SYS_PREFIX):v["prompt"].index("<|eot_id|>")]
+    if not (t.endswith(".") and len(re.findall(r"[.!?]", t)) == 1 and "\n" not in t and len(t) <= 120):
         sent_bad += 1
-    if FAMILY[v["template_id"]] not in t or t != cp["deployment_sentence"][v["template_id"]]:
-        family_bad += 1
-print(f"[4] added_text is one sentence: failures = {sent_bad}; names the row's template-family deployment "
-      f"and equals the fixed text for that template: failures = {family_bad} (required 0/0)")
-fail |= bool(sent_bad or family_bad)
+    if FAMILY[v["template_id"]] not in t or FAMILY[v["template_id"]] not in st:
+        firm_bad += 1
+    if t != cp["awareness_sentence"].get(str(v["derived_from"])):
+        pool_bad += 1
+    o = t[:t.index(FAMILY[v["template_id"]])].strip() if FAMILY[v["template_id"]] in t else t[:30]
+    o = o.split(" the ")[0].split(" Corvia")[0]
+    opens[o] = opens.get(o, 0) + 1
+distinct = len(set(v["added_text"] for v in ca))
+max_share = max(opens.values())
+print(f"[4] added_text is one sentence <= 120 chars: failures = {sent_bad}; names the firm as the row's system turn does: "
+      f"failures = {firm_bad}; equals the per-row pool record: failures = {pool_bad}; distinct across rows = {distinct} "
+      f"(required {n}); opening clauses = {len(opens)}, max rows sharing one = {max_share} (required <= 10)")
+fail |= bool(sent_bad or firm_bad or pool_bad) or distinct != n or max_share > 10
 
 # --- 5. banned vocabulary in every new and added_text ---
 # The function name is masked before scanning (step-00 ruling: problem 248 is harmonic_sum,

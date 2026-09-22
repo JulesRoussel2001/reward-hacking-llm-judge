@@ -3,8 +3,8 @@
 
 CA.completion = confession_obj.completion with (1) the ordered substitutions in
 notes/prompts/v2/ca_counterparts.json applied to the prose after the code block, each
-'old' occurring exactly once, and (2) the template's deployment sentence appended after
-the separator. The code block, the prompt, and every other character are unchanged.
+'old' occurring exactly once, and (2) the row's awareness sentence (one distinct factual sentence per problem_id)
+appended after the separator. The code block, the prompt, and every other character are unchanged.
 Each row records reframe_ops (formulation_id, old, new, in application order) and
 added_text, so the completion is reconstructible from the parent.
 
@@ -50,7 +50,7 @@ def build_row(parent, neutral, cp, pool):
     fn, val = parse_stub(m.group(2))
     prefix, prose = parent["completion"][:m.end()], parent["completion"][m.end():]
     ops = ops_for(cp, pool, neutral["slot_ids"], fn, val)
-    added = cp["deployment_sentence"][parent["template_id"]]
+    added = cp["awareness_sentence"][str(parent["derived_from"])]
     completion = prefix + apply_ops(prose, ops) + cp["separator"] + added
     return {
         "cell": "CA", "base_cell": "confession_obj", "derived_from": parent["derived_from"],
