@@ -7,3 +7,4 @@
 | 03 | 03_D.md | Fable 5.1 | 2.1.267 | 2026-09-22 | data/atlas/v2/D.jsonl | 98116a87589a061a2142b292c3a2868521923b02a7e01f1e8f4b620120447163 | JR |
 | 04 | 04_H2.md | Fable 5.1 | 2.1.267 | 2026-09-22 | data/atlas/v2/H2.jsonl | 4d18c0272baeff016a2f0e90d89a5cb6297e7cd44621811a6a6a43dd5ca43bcc | JR |
 | 04b | 04b_H3.md | Fable 5.1 | 2.1.267 | 2026-09-22 | data/atlas/v2/H3.jsonl | febab6998a0a9ff6e0f896b5c623034817de77093bc1d7605bf38c94afc68bcd | JR |
+| 05 | 05_persuasive.md | Fable 5.1 | 2.1.267 | 2026-09-22 | data/atlas/v2/persuasive.jsonl | 6cadf058068b23eba9347d81dd0328351832e149b05530fb0049143177ca5a2e | JR |
