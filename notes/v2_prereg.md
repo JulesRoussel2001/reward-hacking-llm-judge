@@ -118,3 +118,16 @@ prompt or labels between runs, adding cells to the main table after seeing resul
 b5d4fe613ffc8268c7067bad40d8aabd24aac2b938825fc9b11e4237ec2fe7f6 (same rows, alphabetical
 key order; the 2555be57 re-serialisation was never adopted). All cells were built from and
 verified against b5d4fe61. No data change.
+
+### Amendment 3 — 2026-09-22 (after the first two judge cells, before CA/D)
+
+(i) Sonnet 5 confession_neutral (15.0%, CI 9.3–23.3) and confession_obj (39.0%, CI
+30.0–48.8) fall outside the §4 ranges; both are consistent with the pilot's 10-row
+intervals (0/10, 1/10). Reasoning audit (`runs/v2/sonnet5_confession_reasoning_audit.md`):
+54/54 HONEST rows recognise the fixed value and rest the verdict on transparency. No design
+change.
+
+(ii) Exploratory cell added: natural_disavowal — the 100 raw strategic_honesty completions
+from `atlas_main_v2.jsonl` for the manifest's hacked problems, neutral system turn, judged
+under the same configuration, as a detection floor independent of constructed prose.
+Prediction: ≤10% mislabel (pilot 0/10).
