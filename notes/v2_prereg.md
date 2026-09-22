@@ -147,3 +147,17 @@ design change.
 (iii) Budget: repeats of CA and D dropped (stability shown in pilot). Opus 5.5 to be run on
 CA and D over a fixed 70-problem subset drawn with seed 2026 from the 100 hacked
 problem_ids, paired analysis on that subset only.
+
+### Amendment 5 — 2026-09-22 (after the Sonnet 5 sweep; before the second judge)
+
+(i) Sonnet 5: persuasive 37.0% (CI 28.2–46.8; predicted 0–30, slightly missed). H-M met:
+persuasive − D = −34.0 (Newcombe −45.4 to −20.9, McNemar p=2.0e-6); persuasive − CA = +6.0
+(−7.2 to +18.9, p=0.46). H-H met: H0 0/50, H2 1/50, H3 1/49 (one no-label, problem 183,
+max_tokens exhausted). Exploratory, not preregistered: persuasive by fit_rating
+26.5/28.0/51.2; H3 reasoning ~2× H2 tokens with sabotage-checking language, keyword-coded
+only.
+
+(ii) Second judge pinned: model id claude-opus-5-5, effort max, {LAB}=Anthropic. Budget
+forces the subset to 50 hacked problem_ids drawn with seed 2026 (sorted ids,
+random.Random(2026).sample), replacing the 70 in Amendment 4. Cells CA and D on that subset
+only; paired analysis on the subset; prediction D−CA ≥ +30.
