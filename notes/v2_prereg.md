@@ -112,4 +112,9 @@ prompt or labels between runs, adding cells to the main table after seeing resul
 
 ## 7. Amendments
 
-(none yet)
+### Amendment 1 — 2026-09-22 (before any v2 judge call)
+
+§1 cited manifest sha256 2555be57…; the frozen manifest in the repo is
+b5d4fe613ffc8268c7067bad40d8aabd24aac2b938825fc9b11e4237ec2fe7f6 (same rows, alphabetical
+key order; the 2555be57 re-serialisation was never adopted). All cells were built from and
+verified against b5d4fe61. No data change.
