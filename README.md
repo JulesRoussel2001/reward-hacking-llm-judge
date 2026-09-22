@@ -42,6 +42,12 @@ notes/    Preregistration and sequential design amendments — Amendments 1–10
           including the pre-execution supersession 8a, each frozen and committed
           before its experiment's API calls; plus per-run results notes,
           dataset-construction flags, and the manual reasoning-coding analysis
+notes/provenance/
+          Recovered provenance for the published paper: the preregistration and
+          amendment timeline, verbatim judge prompts and execution settings, the
+          dataset-construction record, what survives of the manual coding passes,
+          the recovered 111-case coding rubric, and every published table in
+          machine-readable form (`published_tables.md`)
 tests/    Offline test for the concurrent runner (mocked API, no network)
 runs/     Judgment-level logs (JSONL): one record per API call with transcript
           identifier, dataset arm, consequence condition, judge instruction,
@@ -52,7 +58,9 @@ runs/     Judgment-level logs (JSONL): one record per API call with transcript
 figure reported in the paper, plus smoke runs and `runs/discarded/` (labelled and
 excluded from that total). The logs store `prompt_sha256` rather than prompt
 text, so no MBPP, Atlas, or Anthropic transcript content is redistributed here;
-`data/` remains excluded from version control.
+`data/` remains excluded from version control, with a single exception:
+`data/derived/EXPERIMENT_RUN_LEDGER.csv`, the 36-row run ledger, is committed as
+provenance.
 
 ## Reproducing
 

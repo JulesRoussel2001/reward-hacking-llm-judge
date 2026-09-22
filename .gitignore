@@ -2,7 +2,13 @@
 .env
 *.key
 # data & artifacts never committed
-data/
+# (data/ is excluded entry-by-entry so the run ledger can be re-included below;
+#  git cannot re-include a file whose parent directory is excluded outright)
+data/*
+!data/derived/
+data/derived/*
+# The experiment run ledger IS released with the paper (provenance).
+!data/derived/EXPERIMENT_RUN_LEDGER.csv
 external/
 logs/
 *.jsonl
