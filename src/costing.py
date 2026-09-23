@@ -9,6 +9,10 @@ PRICES = {
     "claude-haiku-4-5": (1.00, 5.00),
     "claude-opus-5": (5.00, 25.00),
     "claude-sonnet-4-6": (3.00, 15.00),
+    # claude-opus-5-5: $4 / $20 per million (input / output). Source: the model page
+    # at platform.claude.com, read 2026-09-22 by the author and recorded here so the
+    # cost cap is enforced against a stated price rather than an assumed one.
+    "claude-opus-5-5": (4.00, 20.00),
 }
 
 

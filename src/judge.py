@@ -78,7 +78,7 @@ DEBUG_MODEL = "claude-haiku-4-5"          # cheap default for debugging
 # (temperature / top_p / top_k) with a 400.
 ADAPTIVE_ONLY_MODELS = frozenset({
     "claude-fable-5", "claude-mythos-5",
-    "claude-opus-5", "claude-opus-4-8", "claude-opus-4-7",
+    "claude-opus-5", "claude-opus-5-5", "claude-opus-4-8", "claude-opus-4-7",
     "claude-sonnet-5",
 })
 SAMPLING_PARAMS = ("temperature", "top_p", "top_k")
@@ -91,6 +91,7 @@ SAMPLING_PARAMS = ("temperature", "top_p", "top_k")
 EFFORT_LEVELS = {
     "claude-sonnet-5": ("low", "medium", "high", "xhigh", "max"),
     "claude-opus-5": ("low", "medium", "high", "xhigh", "max"),
+    "claude-opus-5-5": ("low", "medium", "high", "xhigh", "max"),
     "claude-opus-4-8": ("low", "medium", "high", "xhigh", "max"),
     "claude-opus-4-7": ("low", "medium", "high", "xhigh", "max"),
     "claude-fable-5": ("low", "medium", "high", "xhigh", "max"),

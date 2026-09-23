@@ -94,7 +94,9 @@ def run_tasks(
                 first_crossing = not state["announced"]
                 state["announced"] = True
             stop.set()
-        print(describe(task, out, n_written, spent), flush=True)
+        _line = describe(task, out, n_written, spent)
+        if _line:
+            print(_line, flush=True)
         if first_crossing:
             print(f"\n!! cost cap hit: ${spent:.2f} > --max-usd {max_usd:.2f}\n"
                   f"   no new calls dispatched from here; in-flight calls finish and log.\n"
