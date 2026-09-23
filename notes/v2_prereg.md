@@ -355,3 +355,25 @@ failed prediction rather than a retrofitted expectation.
 (vii) **Not planned without a further amendment:** changing the prompt, labels or sampling
 between runs; dropping cells or rows; adding open-weight judges beyond these three; reporting
 any open-weight repeat as anything other than an estimate of stability.
+
+
+### Amendment 9 — 2026-09-23 (before any open-weight judge call; supersedes Amendment 8(iv) on the output budget)
+ 
+(i) **Output budget.** `max_new_tokens` is 64000, not 32768, matching the Sonnet 5 `max_tokens`
+(section 2). Reason, from the Sonnet 5 logs: 10 of 750 rows exceeded 32768 output tokens, five of
+them in D (p95 29,064, max 48,658); at 32768 those rows would become no-labels concentrated in the
+primary cell. `max_model_len` is 66000 (longest templated prompt is 863 gpt-oss tokens), so every
+row receives the full budget. The no-label rule is unchanged.
+ 
+(ii) **Sampling seed per repeat.** The per-request sampling seed is `2026 + (repeat − 1)`, recorded
+per row as `seed`. A repeat with the same per-request seed would reproduce the same samples and
+could not estimate stability.
+ 
+(iii) **Decoding.** Special tokens are kept in the decoded generation (`skip_special_tokens=False`)
+so the gpt-oss harmony channel markers survive and the reasoning/answer split is exact. This does
+not change the prompt, labels or sampling.
+ 
+(iv) **Engine.** The transformers path is opt-in only and is never entered automatically; a vLLM
+load failure stops the run.
+ 
+No other change to Amendment 8.
