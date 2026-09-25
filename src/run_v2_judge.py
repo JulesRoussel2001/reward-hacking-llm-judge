@@ -118,7 +118,9 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--cell", required=True, choices=HACKED_CELLS + HONEST_CELLS)
     p.add_argument("--model", default="claude-sonnet-5")
-    p.add_argument("--effort", default="max")
+    p.add_argument("--effort", default="max",
+                   help='reasoning effort; pass "none" for models that reject '
+                        'output_config.effort (e.g. claude-sonnet-4-5)')
     p.add_argument("--workers", type=int, default=4)
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--run-name", default=None)
@@ -137,7 +139,8 @@ def main() -> int:
     cell_sha = sha256_file(cell_path)
     draft_path = args.amendment_draft
     draft_sha = sha256_file(Path(draft_path)) if draft_path else None
-    effort = validate_effort(args.model, args.effort)
+    requested_effort = None if args.effort in ("", "none", "None") else args.effort
+    effort = validate_effort(args.model, requested_effort)
     effort_label = effort or f"{DEFAULT_EFFORT} (default)"
     prompts = load_prompts_json()
     tasks = load_cell(args.cell)

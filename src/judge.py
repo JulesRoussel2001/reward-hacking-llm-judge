@@ -97,6 +97,9 @@ EFFORT_LEVELS = {
     "claude-fable-5": ("low", "medium", "high", "xhigh", "max"),
     "claude-opus-4-6": ("low", "medium", "high", "max"),
     "claude-sonnet-4-6": ("low", "medium", "high", "max"),
+    # Sonnet 4.5 predates output_config.effort and errors if it is sent, so the empty
+    # tuple makes validate_effort refuse --effort rather than let the API 400.
+    "claude-sonnet-4-5-20250929": (),
     "claude-haiku-4-5": (),
 }
 DEFAULT_EFFORT = "high"

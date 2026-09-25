@@ -13,6 +13,10 @@ PRICES = {
     # at platform.claude.com, read 2026-09-22 by the author and recorded here so the
     # cost cap is enforced against a stated price rather than an assumed one.
     "claude-opus-5-5": (4.00, 20.00),
+    # claude-sonnet-4-5-20250929: $3 / $15 per million (input / output). Source: the
+    # Anthropic pricing page, read 2026-09-25. A legacy model: it predates the effort
+    # API and uses the pre-4.6 budget_tokens thinking form.
+    "claude-sonnet-4-5-20250929": (3.00, 15.00),
 }
 
 
