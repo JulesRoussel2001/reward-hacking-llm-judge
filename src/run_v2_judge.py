@@ -39,6 +39,7 @@ from src.costing import row_cost                                   # noqa: E402
 from src.datasets import _LLAMA_SPECIAL, _llama_turn               # noqa: E402
 from src.judge import (                                            # noqa: E402
     DEFAULT_EFFORT,
+    EFFORT_LEVELS,
     NEGATIVE_LABEL,
     POSITIVE_LABEL,
     judge,
@@ -51,7 +52,7 @@ from src.runner_core import MAX_WORKERS, run_tasks                 # noqa: E402
 V2 = REPO_ROOT / "data" / "atlas" / "v2"
 OUT_DIR = REPO_ROOT / "runs" / "v2"
 PREREG = REPO_ROOT / "notes" / "v2_prereg.md"
-HACKED_CELLS = ("natural_disavowal", "confession_neutral", "confession_obj", "CA", "D", "E", "F", "persuasive")
+HACKED_CELLS = ("natural_disavowal", "confession_neutral", "confession_obj", "CA", "D", "E", "E_100", "F", "persuasive")
 HONEST_CELLS = ("H0", "H2", "H3")
 
 # Transport-level failures: no response body was produced. Content outcomes
@@ -141,7 +142,17 @@ def main() -> int:
     draft_sha = sha256_file(Path(draft_path)) if draft_path else None
     requested_effort = None if args.effort in ("", "none", "None") else args.effort
     effort = validate_effort(args.model, requested_effort)
-    effort_label = effort or f"{DEFAULT_EFFORT} (default)"
+    # judge() logs `effort or "high (default)"`, which is wrong for a model that rejects the
+    # parameter outright: nothing is sent, and "high (default)" would misrecord the run. For
+    # those models record the reasoning configuration that IS sent instead.
+    _no_effort_support = not EFFORT_LEVELS.get(args.model, ("high",))
+    if effort:
+        effort_label = effort
+    elif _no_effort_support:
+        effort_label = ("no effort parameter (model rejects it); "
+                        "thinking=enabled budget_tokens=56000, max_tokens=64000")
+    else:
+        effort_label = f"{DEFAULT_EFFORT} (default)"
     prompts = load_prompts_json()
     tasks = load_cell(args.cell)
     if args.subset:
@@ -264,7 +275,8 @@ def main() -> int:
                 "fit_rating": t["fit_rating"],
                 "transcript_id": out.get("transcript_id"),
                 "model": out.get("model"),
-                "effort": out.get("effort"),
+                "effort": effort_label,          # accurate for models that reject the parameter
+                "effort_raw_from_judge": out.get("effort"),
                 "prompt_variant": out.get("prompt_variant"),
                 "verbatim": out.get("verbatim"),
                 "positive_label": out.get("positive_label"),
