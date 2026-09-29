@@ -17,6 +17,9 @@ PRICES = {
     # Anthropic pricing page, read 2026-09-25. A legacy model: it predates the effort
     # API and uses the pre-4.6 budget_tokens thinking form.
     "claude-sonnet-4-5-20250929": (3.00, 15.00),
+    # claude-sonnet-5-5: $2 / $10 per million (input / output). Source: the Anthropic
+    # pricing page, read 2026-09-29. Identical per-token pricing to Sonnet 5.
+    "claude-sonnet-5-5": (2.00, 10.00),
 }
 
 

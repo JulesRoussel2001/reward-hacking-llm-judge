@@ -79,7 +79,7 @@ DEBUG_MODEL = "claude-haiku-4-5"          # cheap default for debugging
 ADAPTIVE_ONLY_MODELS = frozenset({
     "claude-fable-5", "claude-mythos-5",
     "claude-opus-5", "claude-opus-5-5", "claude-opus-4-8", "claude-opus-4-7",
-    "claude-sonnet-5",
+    "claude-sonnet-5", "claude-sonnet-5-5",
 })
 SAMPLING_PARAMS = ("temperature", "top_p", "top_k")
 
@@ -90,6 +90,8 @@ SAMPLING_PARAMS = ("temperature", "top_p", "top_k")
 # empty set rather than a default.
 EFFORT_LEVELS = {
     "claude-sonnet-5": ("low", "medium", "high", "xhigh", "max"),
+    # Sonnet 5.5: full ladder verified by probe 2026-09-29; adaptive-only, as Sonnet 5.
+    "claude-sonnet-5-5": ("low", "medium", "high", "xhigh", "max"),
     "claude-opus-5": ("low", "medium", "high", "xhigh", "max"),
     "claude-opus-5-5": ("low", "medium", "high", "xhigh", "max"),
     "claude-opus-4-8": ("low", "medium", "high", "xhigh", "max"),
